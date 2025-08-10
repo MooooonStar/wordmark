@@ -287,7 +287,7 @@
         const openaiApiKey = 'sk-48553c56c2494175a4aac1f422c51c74';
         
         // 商标生成提示词
-        const prompt = `你是一个专业的USPTO商标生成专家。请生成9个符合USPTO标准的商标名称。
+        const prompt = `你是一个专业的USPTO商标生成专家。请生成6个符合USPTO标准的商标名称。
 
 生成规则：
 1. 独特性强：避免过于通用或描述性的词汇，禁止使用现有的商标
@@ -304,7 +304,7 @@
 - 确保9个名称都是独特的
 - 名称应该具有可注册性
 
-请生成9个符合以上标准的商标名称：`;
+请生成6个符合以上标准的商标名称：`;
 
         async function callOpenAI() {
             try {
@@ -394,23 +394,7 @@
             // 构建USPTO查询URL
             const usptoSearchUrl = 'https://tmsearch.uspto.gov/search/search-information';
             copyToClipboard(trademark);
-            
-            // // 在新标签页中打开USPTO搜索页面
-            const newWindow = window.open(usptoSearchUrl, '_blank');
-            
-            // // 等待页面加载后填入搜索词
-            // if (newWindow) {
-            //     // 由于跨域限制，我们无法直接操作新窗口的内容
-            //     // 但我们可以提供一个备用方案：复制商标名称到剪贴板
-            //     copyToClipboard(trademark);
-                
-            //     // 显示提示信息
-            //     showNotification(`已复制 "${trademark}" 到剪贴板，请在USPTO页面的搜索框中粘贴`);
-            // } else {
-            //     // 如果弹窗被阻止，提供备用方案
-            //     alert('请允许弹窗，或手动访问：https://tmsearch.uspto.gov/search/search-information');
-            //     copyToClipboard(trademark);
-            // }
+            window.open(usptoSearchUrl, '_blank');
         }
         
         function copyToClipboard(text) {
