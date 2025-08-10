@@ -274,6 +274,10 @@
             <button class="generate-btn" onclick="generateTrademarks()">
                 Generate
             </button>
+
+            <button class="generate-btn" onclick="deduple()">
+                Query
+            </button>
             
             <div id="loading" class="loading" style="display: none;">
                 正在生成商标名称...
@@ -356,6 +360,11 @@
             }
             
             return trademarks;
+        }
+        
+        async function deduple() {
+            const apiResponse = await queryUSPTO('tesla');
+            console.log(apiResponse)     
         }
         
         async function generateTrademarks() {
@@ -564,6 +573,8 @@
                 },
                 body: JSON.stringify(searchQuery)
             });
+
+            console.log(response)
             
             if (!response.ok) {
                 throw new Error(`USPTO API调用失败: ${response.status}`);
