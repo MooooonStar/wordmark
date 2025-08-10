@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USPTO Workmark</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .main-container {
+            display: flex;
+            gap: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            align-items: flex-start;
+        }
+        
+        .left-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            text-align: center;
+        }
+        
+        .right-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 40%;
+            min-height: 600px;
+            display: none;
+        }
+        
+        .right-panel.show {
+            display: block;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .generate-btn {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+            margin-bottom: 30px;
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+        }
+        
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+        
+        .trademarks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .trademark-item {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 1.3em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .trademark-item.searching {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .trademark-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .trademark-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .trademark-item:hover::before {
+            left: 100%;
+        }
+        
+        .loading {
+            color: #667eea;
+            font-size: 1.1em;
+            margin: 20px 0;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .search-header {
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .search-title {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .search-trademark {
+            font-size: 1.5em;
+            color: #667eea;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .search-loading {
+            text-align: center;
+            color: #667eea;
+            font-size: 1.1em;
+            margin: 40px 0;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .search-results {
+            margin-top: 20px;
+        }
+        
+        .result-summary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .result-summary.safe {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+        
+        .result-summary.warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+        
+        .result-summary.danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .result-item {
+            background: rgba(102, 126, 234, 0.1);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        
+        .result-item.abandoned {
+            border-left-color: #f39c12;
+            background: rgba(243, 156, 18, 0.1);
+        }
+        
+        .result-item.active {
+            border-left-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+        
+        .trademark-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .trademark-status {
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .trademark-status.abandoned {
+            color: #f39c12;
+        }
+        
+        .trademark-status.active {
+            color: #e74c3c;
+        }
+        
+        .trademark-details {
+            color: #555;
+            font-size: 0.8em;
+            line-height: 1.4;
+        }
+        
+        .error {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(231, 76, 60, 0.2);
+            text-align: center;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+        
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .left-panel, .right-panel {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="left-panel">
+            <h1>🏷️ USPTO</h1>
+            
+            <button class="generate-btn" onclick="generateTrademarks()">
+                Generate
+            </button>
+            
+            <div id="loading" class="loading" style="display: none;">
+                正在生成商标名称...
+            </div>
+            
+            <div id="trademarks" class="trademarks-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        const openaiApiKey = 'sk-48553c56c2494175a4aac1f422c51c74';
+        
+        // 商标生成提示词
+        const prompt = `你是一个专业的USPTO商标生成专家。请生成9个符合USPTO标准的商标名称。
+
+生成规则：
+1. 独特性强：避免过于通用或描述性的词汇，禁止使用现有的商标
+2. 简短易记：长度在3-12个字符之间，通常2-3个音节
+3. 易于发音和拼写：避免复杂的字母组合
+4. 具有商业价值：听起来专业且有品牌潜力
+5. 避免已知品牌：不要使用现有知名商标
+6. 现代感：适合科技、创新类企业
+7. 国际化：在不同语言中都易于理解
+
+输出要求：
+- 仅输出商标名称，每个名称占一行
+- 不需要解释或额外说明
+- 确保9个名称都是独特的
+- 名称应该具有可注册性
+
+请生成9个符合以上标准的商标名称：`;
+
+        async function callOpenAI() {
+            try {
+                const response = await fetch('https://api.deepseek.com/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${openaiApiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'deepseek-chat',
+                        messages: [{
+                            role: 'user',
+                            content: prompt
+                        }],
+                        max_tokens: 200,
+                        temperature: 0.8
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API调用失败: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                return data.choices[0].message.content.trim();
+            } catch (error) {
+                console.error('OpenAI API调用错误:', error);
+                alert('API调用失败: ' + error.message);
+                return null;
+            }
+        }
+        
+        function parseTrademarks(apiResponse) {
+            if (!apiResponse) return [];
+            
+            const lines = apiResponse.split('\n').filter(line => line.trim());
+            const trademarks = [];
+            
+            for (let line of lines) {
+                let trademark = line.replace(/^\d+\.?\s*/, '').trim();
+                trademark = trademark.replace(/^[-•]\s*/, '').trim();
+                
+                if (trademark && trademark.length >= 3 && trademark.length <= 12) {
+                    trademarks.push(trademark);
+                }
+                
+                if (trademarks.length >= 10) break;
+            }
+            
+            return trademarks;
+        }
+        
+        async function generateTrademarks() {
+            const loadingEl = document.getElementById('loading');
+            const trademarksEl = document.getElementById('trademarks');
+            
+            loadingEl.style.display = 'block';
+            loadingEl.textContent = '正在调用DeepSeek生成商标...';
+            trademarksEl.innerHTML = '';
+            
+            try {
+                const apiResponse = await callOpenAI();
+                
+                if (apiResponse) {
+                    const trademarks = parseTrademarks(apiResponse);
+                    
+                    if (trademarks.length > 0) {
+                        trademarksEl.innerHTML = trademarks
+                            .map(trademark => `
+                                <div class="trademark-item" onclick="searchTrademarkOnUSPTO('${trademark}')">
+                                    ${trademark}
+                                </div>
+                            `).join('');
+                    } else {
+                        trademarksEl.innerHTML = '<div class="error">API返回格式解析失败，请重试</div>';
+                    }
+                }
+            } catch (error) {
+                trademarksEl.innerHTML = `<div class="error">生成失败: ${error.message}</div>`;
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+        
+        function searchTrademarkOnUSPTO(trademark) {
+            // 构建USPTO查询URL
+            const usptoSearchUrl = 'https://tmsearch.uspto.gov/search/search-information';
+            copyToClipboard(trademark);
+            
+            // // 在新标签页中打开USPTO搜索页面
+            const newWindow = window.open(usptoSearchUrl, '_blank');
+            
+            // // 等待页面加载后填入搜索词
+            // if (newWindow) {
+            //     // 由于跨域限制，我们无法直接操作新窗口的内容
+            //     // 但我们可以提供一个备用方案：复制商标名称到剪贴板
+            //     copyToClipboard(trademark);
+                
+            //     // 显示提示信息
+            //     showNotification(`已复制 "${trademark}" 到剪贴板，请在USPTO页面的搜索框中粘贴`);
+            // } else {
+            //     // 如果弹窗被阻止，提供备用方案
+            //     alert('请允许弹窗，或手动访问：https://tmsearch.uspto.gov/search/search-information');
+            //     copyToClipboard(trademark);
+            // }
+        }
+        
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(err => {
+                    console.error('无法复制到剪贴板:', err);
+                    fallbackCopyToClipboard(text);
+                });
+            } else {
+                fallbackCopyToClipboard(text);
+            }
+        }
+        
+        function fallbackCopyToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+            } catch (err) {
+                console.error('复制失败:', err);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        function showNotification(message) {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.innerHTML = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                z-index: 10000;
+                font-family: inherit;
+                font-size: 14px;
+                max-width: 300px;
+                animation: slideInRight 0.3s ease-out;
+            `;
+            
+            // 添加动画样式
+            if (!document.querySelector('#notification-styles')) {
+                const style = document.createElement('style');
+                style.id = 'notification-styles';
+                style.textContent = `
+                    @keyframes slideInRight {
+                        from {
+                            transform: translateX(100%);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                    }
+                    @keyframes slideOutRight {
+                        from {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                        to {
+                            transform: translateX(100%);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(notification);
+            
+            // 3秒后自动消失
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease-out';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        async function queryUSPTO(trademark) {
+            const searchQuery = {
+                "query": {
+                    "bool": {
+                        "must": [{
+                            "bool": {
+                                "should": [
+                                    {"match_phrase": {"WM": {"query": trademark, "boost": 5}}},
+                                    {"match": {"WM": {"query": trademark, "boost": 2}}},
+                                    {"match_phrase": {"PM": {"query": trademark, "boost": 2}}}
+                                ]
+                            }
+                        }]
+                    }
+                },
+                "aggs": {
+                    "alive": {"terms": {"field": "alive"}},
+                    "cancelDate": {"value_count": {"field": "cancelDate"}}
+                },
+                "size": 100,
+                "from": 0,
+                "track_total_hits": true,
+                "highlight": {
+                    "fields": {
+                        "abandonDate": {},
+                        "attorney": {},
+                        "alive": {},
+                        "cancelDate": {},
+                        "coordinatedClass": {},
+                        "currentBasis": {},
+                        "drawingCode": {},
+                        "filedDate": {},
+                        "goodsAndServices": {},
+                        "id": {},
+                        "internationalClass": {},
+                        "markDescription": {},
+                        "markType": {},
+                        "ownerFullText": {},
+                        "ownerName": {},
+                        "ownerType": {},
+                        "priorityDate": {},
+                        "registrationDate": {},
+                        "registrationId": {},
+                        "registrationType": {},
+                        "supplementalRegistrationDate": {},
+                        "translate": {},
+                        "usClass": {},
+                        "wordmarkPseudoText": {}
+                    },
+                    "pre_tags": ["<strong>"],
+                    "post_tags": ["</strong>"],
+                    "number_of_fragments": 0
+                },
+                "_source": [
+                    "abandonDate", "alive", "attorney", "cancelDate", "coordinatedClass",
+                    "currentBasis", "drawingCode", "filedDate", "goodsAndServices",
+                    "id", "internationalClass", "markDescription", "markType",
+                    "ownerFullText", "ownerName", "ownerType", "priorityDate",
+                    "registrationDate", "registrationId", "registrationType",
+                    "supplementalRegistrationDate", "translate", "usClass",
+                    "wordmark", "wordmarkPseudoText"
+                ]
+            };
+            
+            const response = await fetch('https://tmsearch.uspto.gov/api-v1-0-0/tmsearch', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json, text/plain, */*',
+                    'Accept-Language': 'zh-CN,zh;q=0.9',
+                    'Content-Type': 'application/json',
+                    'Origin': 'https://tmsearch.uspto.gov',
+                    'Referer': 'https://tmsearch.uspto.gov/search/search-results'
+                },
+                body: JSON.stringify(searchQuery)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`USPTO API调用失败: ${response.status}`);
+            }
+            
+            return await response.json();
+        }
+        
+        function displaySearchResults(data, trademark) {
+            const searchResults = document.getElementById('searchResults');
+            const hits = data.hits.hits;
+            const totalCount = data.hits.totalValue;
+            
+            // 生成结果摘要
+            let summaryClass = 'safe';
+            let summaryText = `✅ 好消息！未找到完全相同的商标，可能可以注册`;
+            
+            if (totalCount > 0) {
+                const activeMarks = hits.filter(hit => hit._source.alive === true).length;
+                const abandonedMarks = hits.filter(hit => hit._source.alive === false).length;
+                
+                if (activeMarks > 0) {
+                    summaryClass = 'danger';
+                    summaryText = `❌ 风险较高！找到 ${activeMarks} 个有效商标，${abandonedMarks} 个已放弃商标`;
+                } else if (abandonedMarks > 0) {
+                    summaryClass = 'warning';
+                    summaryText = `⚠️ 需要谨慎！找到 ${abandonedMarks} 个已放弃的相似商标`;
+                }
+            }
+            
+            let resultsHTML = `
+                <div class="result-summary ${summaryClass}">
+                    <div style="font-size: 1.2em; margin-bottom: 5px;">${summaryText}</div>
+                    <div style="font-size: 0.9em; opacity: 0.9;">共找到 ${totalCount} 个相关结果</div>
+                </div>
+            `;
+            
+            // 显示详细结果
+            if (hits.length > 0) {
+                resultsHTML += hits.map(hit => {
+                    const source = hit._source;
+                    const isActive = source.alive;
+                    
+                    // 格式化状态
+                    let statusText = 'Dead';
+                    if (isActive) {
+                        statusText = source.registrationId ? 'Live/Registered' : 'Live/Pending';
+                    } else if (source.cancelDate) {
+                        statusText = 'Dead/Cancelled';
+                    } else if (source.abandonDate) {
+                        statusText = 'Dead/Abandoned';
+                    }
+                    
+                    // 格式化商品服务
+                    let goodsServices = 'N/A';
+                    if (source.goodsAndServices && source.goodsAndServices.length > 0) {
+                        goodsServices = source.goodsAndServices[0];
+                        // 截取前150字符
+                        if (goodsServices.length > 150) {
+                            goodsServices = goodsServices.substring(0, 150) + '...';
+                        }
+                    }
+                    
+                    // 格式化国际分类
+                    let classes = 'N/A';
+                    if (source.internationalClass && source.internationalClass.length > 0) {
+                        classes = source.internationalClass.join(', ').replace(/IC\s*/g, '');
+                    }
+                    
+                    // 格式化所有人
+                    let owners = 'N/A';
+                    if (source.ownerName && source.ownerName.length > 0) {
+                        owners = source.ownerName.join(', ');
+                    }
+                    
+                    const statusClass = isActive ? 'active' : 'abandoned';
+                    
+                    return `
+                        <div class="result-item ${statusClass}" style="margin-bottom: 20px;">
+                            <div style="margin-bottom: 10px;">
+                                <strong>Wordmark</strong><br>
+                                <span style="font-size: 1.2em; color: #333;">${source.wordmark || 'N/A'}</span>
+                            </div>
+                            
+                            <div style="margin-bottom: 10px;">
+                                <strong>Status</strong><br>
+                                <span style="color: ${isActive ? '#e74c3c' : '#f39c12'};">${statusText}</span>
+                            </div>
+                            
+                            <div style="margin-bottom: 10px;">
+                                <strong>Goods & services</strong><br>
+                                <span style="font-size: 0.9em; color: #555;">${goodsServices}</span>
+                            </div>
+                            
+                            <div style="margin-bottom: 10px;">
+                                <strong>Class</strong><br>
+                                <span>${classes}</span>
+                            </div>
+                            
+                            <div style="margin-bottom: 10px;">
+                                <strong>Serial</strong><br>
+                                <span>${source.id || 'N/A'}</span>
+                            </div>
+                            
+                            <div>
+                                <strong>Owners</strong><br>
+                                <span style="font-size: 0.9em; color: #555;">${owners}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                resultsHTML += '<div style="text-align: center; color: #666; margin-top: 20px;">没有找到相关的商标记录</div>';
+            }
+            
+            searchResults.innerHTML = resultsHTML;
+        }
+    </script>
+</body>
+</html>
