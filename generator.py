@@ -5,7 +5,7 @@ from openai import OpenAI
 
 def generate(n = 6):
     client = OpenAI(api_key="sk-48553c56c2494175a4aac1f422c51c74", base_url="https://api.deepseek.com")
-    prompt =  '''你是一个专业的USPTO商标生成专家。请生成6个符合USPTO标准的商标名称。
+    prompt =  '''你是一个专业的USPTO商标生成专家。请生成{n}个符合USPTO标准的商标名称。
 
 生成规则：
 1. 独特性强：避免过于通用或描述性的词汇，禁止使用现有的商标
@@ -22,7 +22,7 @@ def generate(n = 6):
 - 确保9个名称都是独特的
 - 名称应该具有可注册性
 
-请生成6个符合以上标准的商标名称：
+请生成{n}个符合以上标准的商标名称：
 '''
     response = client.chat.completions.create(
         model="deepseek-chat",
@@ -32,28 +32,16 @@ def generate(n = 6):
         stream=False
     )
     s = response.choices[0].message.content
-    return s.split('\n', -1)
+    return [x.strip() for x in s.split('\n', -1)]
 
 def is_available(wordmark):
     url = "https://tmsearch.uspto.gov/api-v1-0-0/tmsearch"
     headers = {
-        "accept": "application/json, text/plain, */*",
-        "accept-language": "zh-CN,zh;q=0.9",
-        "content-type": "application/json",
-        "origin": "https://tmsearch.uspto.gov",
-        "priority": "u=1, i",
-        "referer": "https://tmsearch.uspto.gov/search/search-results",
-        "sec-ch-ua": '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": '"macOS"',
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
         "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
     }
 
     cookies = {
-        "aws-waf-token": "9529a4db-84bd-40ec-80c7-9cb8758412ea:EwoA3gMrMTNEAAAA:q5C0PawnCA/yG6Ara4Ai2Ft732wQKX9+UBxLTmDJeK08Qk+fbqKrfq4nbDn11OdQzNCS/LxEsfoXJeTvdCP2v1IqeFnN8qcf5XMbPPQnH6jiseRRvN8S3N0L3FoRfmECoxWFxO3HFHpPjCWSh0AiWueYEiwcki+Z6Ndgzoe+gv0irKVotcMiyNDzq4wfWKHEXWWrCJ6sHATPGaE6FMrABCuXCDU8o6PbSCRmCABo+Jpf4EdXILj4KelCR2uB+tLOUwhr1pc7Vvgo"
+        "aws-waf-token": "9529a4db-84bd-40ec-80c7-9cb8758412ea:EwoAxKwz7kD0AAAA:U6OU4qKhTSXXjmqdEkV/e4NG8diVWOrGwDlbnMUzP5mmL7aX65M1oWjovysMbGn34Q//1V6M0UK0l7ItJOtRck8pn+eEJiqYUP3rXYE6aHb4tbOJRnAMEguUZz6smggYABwtzhpW2Q+sJCf2yoWo6N4b17HyeTX6ed5lxDARncqX8Tx2vADK158snpD3zpdXDmDiZfZqTkdginnBA/vJCTwd8nBBTIo/22SEuzGPch/O0qLPcExexIsBDd9F5f+uWAZPkJFCjIA7"
     }
 
     payload = {
@@ -88,13 +76,13 @@ def is_available(wordmark):
             "translate", "usClass", "wordmark", "wordmarkPseudoText"
         ]
     }
-    response = requests.post(url, headers=headers, cookies=cookies, json=payload)
+    # https://a434627cf98f.edge.sdk.awswaf.com/a434627cf98f/270cb27a30c2/telemetry
+    response = requests.post(url,headers=headers,cookies=cookies, json=payload)
     if response.status_code != 200:
         print(response)
         raise ValueError(response.status_code)
     hits = response.json()['hits']
     ids = [item["id"] for item in hits['hits'] if item['source']['wordmark'] == wordmark.upper() and item['source']['alive']]
-    print(f"{wordmark}, ids: {ids}")
     return hits['totalValue'] < 10 and len(ids) == 0
 
 if __name__ == '__main__':
@@ -105,7 +93,7 @@ if __name__ == '__main__':
     # got      Quorvia 
     is_available('Quivva')
     got = set()
-    while len(got) < 3:
+    while len(got) < 5:
         items = generate(10)
         print('generate', items)
         for item in items:
